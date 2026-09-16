@@ -37,7 +37,7 @@ app/
 ├── Inventory/    Models/StockMovement, Services/InventoryService, Enums
 ├── Ordering/     Models, Enums/OrderStatus, Services, Repositories, Data, Livewire
 ├── Publishing/   Publishers, Jobs
-├── Reporting/    Contracts, Transmitters, Models, Services, Livewire/Hub
+├── Reporting/    Contracts, Transmitters, Models, Services, Enums, Console, Livewire/Hub
 └── Providers/
 ```
 
@@ -64,7 +64,7 @@ app/
 
 ## Contrato de reporte
 
-El hub identifica productos externos con `external_product_id` de tipo **string**, nunca una FK a `products.id`. Los payloads son agregados (`resumen_diario_de_ventas`, `metrica_de_producto`, `evento_de_log`), nunca filas transaccionales.
+El hub identifica productos externos con `external_product_id` de tipo **string**, nunca una FK a `products.id`. Los payloads son agregados (`daily_sales_report`, `product_metric`, `log_event`), nunca filas transaccionales. Cada payload implementa `ReportPayload` y declara su propio `ReportType`; el transmisor nunca recibe el tipo por separado, así el desajuste tipo/payload es inexpresable.
 
 Toda ingesta pasa por `report_ingestions` con `idempotency_key` única. Un reenvío del mismo payload no debe duplicar datos.
 
@@ -82,12 +82,15 @@ Pest. Cada Service necesita test de feature cubriendo el camino feliz y al menos
 
 No adelantes trabajo de fases posteriores. Si una tarea parece requerirlo, decilo en vez de implementarlo.
 
+## Decisiones resueltas
+
+- **Categorías**: anidadas (Fase 2). Jerarquía vía `categories.parent_id` autoreferenciado — ya reflejado en la convención `nullOnDelete` de arriba.
+- **Reserva de stock** (Fase 3): se reserva al crear el pedido pendiente, con expiración. Implica un mecanismo (job/scheduler) que libere la reserva si el pedido no se confirma a tiempo — a definir en el diseño de Fase 3.
+- **IVA** (Fase 3): precios desglosados, neto + IVA por separado (no precio final único). A definir en el diseño de Fase 3 si `order_items` necesita congelar también el desglose impositivo, en línea con el congelamiento de `unit_price`/`unit_cost`.
+
 ## Decisiones todavía abiertas
 
 No las resuelvas por tu cuenta. Si una tarea depende de alguna, pará y preguntá.
 
-1. Categorías anidadas o planas (bloquea Fase 2).
-2. Reserva de stock en pedidos pendientes: al crear con expiración, o al confirmar (Fase 3).
-3. IVA incluido en precio y desglose fiscal (Fase 3).
-4. Reseña restringida a compradores verificados (Fase 4).
-5. Moderación de reseñas pre o post publicación (Fase 4).
+1. Reseña restringida a compradores verificados (Fase 4).
+2. Moderación de reseñas pre o post publicación (Fase 4).
