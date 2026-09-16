@@ -1,14 +1,9 @@
 <x-layouts.app title="Hub central">
-    <div class="flex flex-col gap-4">
+    <div class="flex flex-col gap-6">
         <flux:heading size="xl">Hub central</flux:heading>
 
-        <flux:callout variant="success" icon="check-circle">
-            <flux:callout.heading>Acceso autorizado</flux:callout.heading>
-            <flux:callout.text>
-                {{ auth()->user()->name }} — rol: {{ auth()->user()->getRoleNames()->implode(', ') }}
-            </flux:callout.text>
-        </flux:callout>
+        <flux:text>Logs reportados por los sistemas asociados y eventos generados por el hub.</flux:text>
 
-        <flux:text>Esta sección todavía no tiene funcionalidad de negocio (Fase 1).</flux:text>
+        @livewire(\App\Reporting\Livewire\Hub\LogViewer::class)
     </div>
 </x-layouts.app>
