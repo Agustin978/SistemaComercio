@@ -4,20 +4,21 @@ namespace Database\Seeders;
 
 use App\Shared\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 
 class SuperAdminSeeder extends Seeder
 {
     /**
-     * Seed the development super_admin user, using credentials from .env.
+     * Crea el super_admin de desarrollo con las credenciales de config/seeding.php.
      */
     public function run(): void
     {
         $user = User::firstOrCreate(
-            ['email' => env('SUPER_ADMIN_EMAIL', 'admin@example.com')],
+            ['email' => Config::string('seeding.super_admin.email')],
             [
-                'name' => env('SUPER_ADMIN_NAME', 'Super Admin'),
-                'password' => Hash::make(env('SUPER_ADMIN_PASSWORD', 'password')),
+                'name' => Config::string('seeding.super_admin.name'),
+                'password' => Hash::make(Config::string('seeding.super_admin.password')),
                 'email_verified_at' => now(),
             ],
         );

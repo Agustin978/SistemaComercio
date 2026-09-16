@@ -7,6 +7,10 @@ parameters:
         - database
         - routes
 
+    # Migración publicada por spatie/laravel-permission: código del vendor, no nuestro.
+    excludePaths:
+        - database/migrations/2026_08_07_155353_create_permission_tables.php
+
     level: max
 
     tmpDir: storage/phpstan

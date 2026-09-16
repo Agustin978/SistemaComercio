@@ -9,7 +9,7 @@ class LoginResponse implements LoginResponseContract
 {
     public function toResponse($request)
     {
-        $user = Auth::user();
+        $user = Auth::user() ?? abort(401);
 
         $redirectTo = match (true) {
             $user->hasRole('super_admin') => '/hub',
