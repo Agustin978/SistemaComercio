@@ -4,6 +4,7 @@ namespace App\Reporting\Models;
 
 use App\Reporting\Contracts\LogLevel;
 use App\Reporting\Enums\LogOrigin;
+use App\Shared\Casts\UtcDateTime;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -28,7 +29,7 @@ class SystemLog extends Model
             'origin' => LogOrigin::class,
             'level' => LogLevel::class,
             'context' => 'array',
-            'logged_at' => 'immutable_datetime',
+            'logged_at' => UtcDateTime::class,
         ];
     }
 

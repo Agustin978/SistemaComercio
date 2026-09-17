@@ -95,6 +95,8 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            // Fija la zona de la sesión: sin esto, una fecha sin offset se interpreta con la zona del servidor.
+            'timezone' => 'UTC',
         ],
 
         // Segunda conexión física a la misma base que 'pgsql'. Solo la usa ReportIngestionRaceTest
@@ -112,6 +114,8 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            // Fija la zona de la sesión: sin esto, una fecha sin offset se interpreta con la zona del servidor.
+            'timezone' => 'UTC',
         ],
 
         'sqlsrv' => [
