@@ -4,6 +4,10 @@ Sistema comercial SaaS con hub de administración central. Monolito modular Lara
 
 Todo el código, comentarios y mensajes de commit en español. Nombres de clases, métodos y columnas de base de datos en inglés.
 
+## Documentación
+
+Las decisiones de arquitectura viven en `docs/adr/` (una por archivo, se agregan, no se editan). Los planes de cada fase, tal como quedaron aprobados, en `docs/planes/`. Antes de cambiar algo que un ADR justifica, leelo.
+
 ## Regla de oro
 
 Antes de crear o modificar una migración, cambiar una relación entre modelos, alterar la estructura de un módulo existente o introducir una dependencia nueva: **presentá el plan y esperá aprobación explícita**. No asumas consentimiento por el hecho de que la tarea lo implique.
@@ -32,7 +36,7 @@ Reporting → Shared
 
 ```
 app/
-├── Shared/       Models/User, Data/BaseData, Exceptions
+├── Shared/       Models/User, Data/BaseData, Casts, Exceptions
 ├── Catalog/      Models, Services, Repositories, Data, Policies, Livewire
 ├── Inventory/    Models/StockMovement, Services/InventoryService, Enums
 ├── Ordering/     Models, Enums/OrderStatus, Services, Repositories, Data, Livewire
