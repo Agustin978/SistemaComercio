@@ -14,7 +14,12 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleSeeder::class,
             SuperAdminSeeder::class,
+            MerchantAdminSeeder::class,
             ReportedSystemSeeder::class,
         ]);
+
+        if (! app()->isProduction()) {
+            $this->call(DemoCatalogSeeder::class);
+        }
     }
 }

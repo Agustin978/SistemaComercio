@@ -36,9 +36,9 @@ Reporting → Shared
 
 ```
 app/
-├── Shared/       Models/User, Data/BaseData, Casts, Exceptions
-├── Catalog/      Models, Services, Repositories, Data, Policies, Livewire
-├── Inventory/    Models/StockMovement, Services/InventoryService, Enums
+├── Shared/       Models/User, Data/BaseData, Casts, Support/Money, Exceptions/DomainException
+├── Catalog/      Models, Services, Data, Exceptions, Policies, Livewire (Repositories: cuando una consulta se comparta entre módulos)
+├── Inventory/    Models/StockMovement, Services/InventoryService, Data, Enums, Exceptions, Policies, Livewire
 ├── Ordering/     Models, Enums/OrderStatus, Services, Repositories, Data, Livewire
 ├── Publishing/   Publishers, Jobs
 ├── Reporting/    Contracts, Transmitters, Models, Services, Enums, Console, Livewire/Hub
@@ -50,8 +50,9 @@ app/
 - **Nada de lógica de negocio en controladores ni en componentes Livewire.** Los componentes orquestan: reciben input, llaman a un Service, exponen estado a la vista.
 - **Los Services son la única puerta de escritura al dominio.** Un componente Livewire no llama a `Model::create()` directamente.
 - **Toda operación multi-tabla va dentro de `DB::transaction()`.**
-- **`order_items` congela `unit_price` y `unit_cost`.** Ninguna consulta de reportes vuelve a `products` a buscar precios históricos.
-- **`products.stock_on_hand` está denormalizado a propósito.** Solo `InventoryService` lo escribe, siempre junto con un registro en `stock_movements`, dentro de la misma transacción y con `lockForUpdate()` sobre el producto.
+- **`order_items` congela `unit_price`, `unit_cost` y `tax_rate`** (ADR 006). Ninguna consulta de reportes vuelve a `products` a buscar precios, costos ni alícuotas históricas.
+- **`products.stock_on_hand` está denormalizado a propósito.** Solo `InventoryService` lo escribe, siempre junto con un registro en `stock_movements`, dentro de la misma transacción y con `lockForUpdate()` sobre el producto. Varios movimientos en una misma operación van por `InventoryService::adjustMany`, que toma los locks ordenados por `product_id` (ADR 005).
+- **Los errores de negocio extienden `App\Shared\Exceptions\DomainException`**; los componentes Livewire los capturan y los muestran como error de formulario. Cualquier otra excepción se propaga.
 - **Nunca N+1.** Usá `with()` explícito. Si una vista itera relaciones, cargalas antes.
 - **Autorización vía Policies**, no con condicionales sueltos en las vistas.
 - **Enums de PHP 8.4 respaldados por string** para estados; nada de strings mágicos.
@@ -65,10 +66,16 @@ app/
 - `categories.parent_id`: `nullOnDelete`.
 - Toda migración necesita un `down()` funcional.
 - Índices explícitos en columnas de filtro y ordenamiento frecuente.
+- Invariantes numéricas (stock, precios, alícuotas) con `CHECK` en la base además del control en el Service.
+
+## Dinero
+
+- `products.price` es el **precio final con IVA incluido**; `tax_rate` permite desglosar neto e IVA hacia atrás; `cost` es neto. Columnas `numeric(12,2)` y `numeric(5,2)`, nunca float.
+- Toda aritmética pasa por `App\Shared\Support\Money` (bcmath). Redondeo: escala interna 6, se redondea a 2 decimales half-up **una sola vez, sobre el resultado final** que se muestra o persiste, nunca por línea intermedia. El desglose se calcula desde el total y `tax = total − net`, así siempre cierra.
 
 ## Contrato de reporte
 
-El hub identifica productos externos con `external_product_id` de tipo **string**, nunca una FK a `products.id`. Los payloads son agregados (`daily_sales_report`, `product_metric`, `log_event`), nunca filas transaccionales. Cada payload implementa `ReportPayload` y declara su propio `ReportType`; el transmisor nunca recibe el tipo por separado, así el desajuste tipo/payload es inexpresable.
+El hub identifica productos externos con `external_product_id` de tipo **string**, nunca una FK a `products.id`. Su valor es `products.uuid` (generado al crear, nunca editable); nunca el SKU, que el comerciante puede cambiar y partiría la serie histórica. Los payloads son agregados (`daily_sales_report`, `product_metric`, `log_event`), nunca filas transaccionales. Cada payload implementa `ReportPayload` y declara su propio `ReportType`; el transmisor nunca recibe el tipo por separado, así el desajuste tipo/payload es inexpresable.
 
 Toda ingesta pasa por `report_ingestions` con `idempotency_key` única. Un reenvío del mismo payload no debe duplicar datos.
 
@@ -81,7 +88,7 @@ Pest. Cada Service necesita test de feature cubriendo el camino feliz y al menos
 - **Fase 0** — Cimientos: estructura, auth, roles, CI, tests de arquitectura.
 - **Fase 1** — Hub: `reported_systems`, `system_logs`, `report_ingestions`, contrato, ingesta, visor de logs.
 - **Fase 2** — Inventario: `categories`, `products`, `stock_movements`, `InventoryService`, CRUD del comerciante.
-- **Fase 3** — Pedidos: `orders`, `order_items`, storefront, checkout sin pago, tableros de ventas.
+- **Fase 3** — Pedidos: `orders`, `order_items`, `product_images`, storefront, checkout sin pago, tableros de ventas.
 - **Fase 4** — Reseñas, puntuación, métricas de interés.
 
 No adelantes trabajo de fases posteriores. Si una tarea parece requerirlo, decilo en vez de implementarlo.
@@ -90,7 +97,8 @@ No adelantes trabajo de fases posteriores. Si una tarea parece requerirlo, decil
 
 - **Categorías**: anidadas (Fase 2). Jerarquía vía `categories.parent_id` autoreferenciado — ya reflejado en la convención `nullOnDelete` de arriba.
 - **Reserva de stock** (Fase 3): se reserva al crear el pedido pendiente, con expiración. Implica un mecanismo (job/scheduler) que libere la reserva si el pedido no se confirma a tiempo — a definir en el diseño de Fase 3.
-- **IVA** (Fase 3): precios desglosados, neto + IVA por separado (no precio final único). A definir en el diseño de Fase 3 si `order_items` necesita congelar también el desglose impositivo, en línea con el congelamiento de `unit_price`/`unit_cost`.
+- **IVA**: el precio se guarda como final con IVA incluido y `tax_rate` permite desglosarlo; "desglosado" significa que el storefront y los documentos muestran neto + IVA calculados desde el precio final (sección Dinero). `order_items` congela `unit_price`, `unit_cost` y `tax_rate` (ADR 006).
+- **Un comercio por despliegue**: sin FK a comercio en `products`/`categories`; el hub distingue instancias por `reported_systems.slug` (ADR 001).
 
 ## Decisiones todavía abiertas
 

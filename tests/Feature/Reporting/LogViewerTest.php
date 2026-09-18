@@ -5,20 +5,11 @@ use App\Reporting\Enums\LogOrigin;
 use App\Reporting\Livewire\Hub\LogViewer;
 use App\Reporting\Models\ReportedSystem;
 use App\Reporting\Models\SystemLog;
-use App\Shared\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
-
-function userWithRole(string $role): User
-{
-    $user = User::factory()->create();
-    $user->assignRole($role);
-
-    return $user;
-}
 
 /**
  * @param  array<string, mixed>  $attributes

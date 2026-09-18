@@ -13,6 +13,19 @@
         <flux:header container class="border-b border-zinc-200 dark:border-zinc-700">
             <flux:brand href="/" name="{{ config('app.name') }}" />
 
+            @auth
+                <flux:navbar class="-mb-px max-lg:hidden">
+                    @role('merchant_admin')
+                        <flux:navbar.item href="{{ route('admin.dashboard') }}" :current="request()->routeIs('admin.dashboard')">Panel</flux:navbar.item>
+                        <flux:navbar.item href="{{ route('admin.products.index') }}" :current="request()->routeIs('admin.products.*', 'admin.stock.*')">Productos</flux:navbar.item>
+                        <flux:navbar.item href="{{ route('admin.categories.index') }}" :current="request()->routeIs('admin.categories.*')">Categorías</flux:navbar.item>
+                    @endrole
+                    @role('super_admin')
+                        <flux:navbar.item href="{{ route('hub.dashboard') }}" :current="request()->routeIs('hub.*')">Hub</flux:navbar.item>
+                    @endrole
+                </flux:navbar>
+            @endauth
+
             <flux:spacer />
 
             @auth

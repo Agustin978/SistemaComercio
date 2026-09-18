@@ -1,5 +1,6 @@
 <?php
 
+use App\Shared\Models\User;
 use Tests\TestCase;
 
 /*
@@ -43,7 +44,10 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function userWithRole(string $role): User
 {
-    // ..
+    $user = User::factory()->create();
+    $user->assignRole($role);
+
+    return $user;
 }

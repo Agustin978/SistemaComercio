@@ -10,13 +10,20 @@ use App\Reporting\Contracts\ReportPayload;
 use App\Reporting\Contracts\ReportTransmitter;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class EmitFakeReportsCommand extends Command
 {
     protected $signature = 'reporting:emit-fake
         {slug=comercio-demo : Slug del sistema emisor}
-        {--divergent : Reenvía la clave del evento de log con un payload distinto}';
+        {--divergent : Reenvía la clave del evento de log con un payload distinto}
+        {--product-uuid= : uuid del producto a reportar; por defecto el del producto demo SKU-DEMO-001}';
+
+    // Reporting no puede importar Catalog: el emisor falso localiza el producto demo por tabla, como haría un sistema externo.
+    private const DEMO_SKU = 'SKU-DEMO-001';
+
+    private const FALLBACK_PRODUCT_UUID = '00000000-0000-7000-8000-000000000001';
 
     protected $description = 'Emite un reporte falso de cada tipo a través del transmisor, para verificar la ingesta a mano';
 
@@ -40,7 +47,7 @@ final class EmitFakeReportsCommand extends Command
                 currency: 'ARS',
             ),
             "fake-product-metric-{$date}" => new ProductMetricData(
-                externalProductId: 'SKU-DEMO-001',
+                externalProductId: $this->productUuid(),
                 date: $date,
                 unitsSold: 3,
                 revenue: '4200.00',
@@ -65,6 +72,25 @@ final class EmitFakeReportsCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function productUuid(): string
+    {
+        $option = $this->option('product-uuid');
+
+        if (is_string($option) && $option !== '') {
+            return $option;
+        }
+
+        $uuid = DB::table('products')->where('sku', self::DEMO_SKU)->value('uuid');
+
+        if (! is_string($uuid)) {
+            $this->warn('No existe el producto demo '.self::DEMO_SKU.' (corré db:seed); se usa un uuid de relleno.');
+
+            return self::FALLBACK_PRODUCT_UUID;
+        }
+
+        return $uuid;
     }
 
     private function emit(ReportTransmitter $transmitter, string $slug, string $key, ReportPayload $payload): void

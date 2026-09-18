@@ -1,14 +1,23 @@
-<x-layouts.app title="Panel del comerciante">
-    <div class="flex flex-col gap-4">
-        <flux:heading size="xl">Panel del comerciante</flux:heading>
+<div class="flex flex-col gap-6">
+    <flux:heading size="xl">Panel del comerciante</flux:heading>
 
-        <flux:callout variant="success" icon="check-circle">
-            <flux:callout.heading>Acceso autorizado</flux:callout.heading>
-            <flux:callout.text>
-                {{ auth()->user()->name }} — rol: {{ auth()->user()->getRoleNames()->implode(', ') }}
-            </flux:callout.text>
-        </flux:callout>
+    <div class="grid gap-4 sm:grid-cols-3">
+        <flux:card>
+            <flux:text>Productos</flux:text>
+            <flux:heading size="xl">{{ $productCount }}</flux:heading>
+            <flux:link href="{{ route('admin.products.index') }}">Ver productos</flux:link>
+        </flux:card>
 
-        <flux:text>Esta sección todavía no tiene funcionalidad de negocio (Fase 2/3).</flux:text>
+        <flux:card>
+            <flux:text>Categorías</flux:text>
+            <flux:heading size="xl">{{ $categoryCount }}</flux:heading>
+            <flux:link href="{{ route('admin.categories.index') }}">Ver categorías</flux:link>
+        </flux:card>
+
+        <flux:card>
+            <flux:text>Activos sin stock</flux:text>
+            <flux:heading size="xl">{{ $outOfStockCount }}</flux:heading>
+            <flux:link href="{{ route('admin.products.index', ['stock' => 'out']) }}">Revisar</flux:link>
+        </flux:card>
     </div>
-</x-layouts.app>
+</div>
